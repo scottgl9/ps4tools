@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libgen.h>
 #include "sha2.h"
 
 #define PS4_PKG_MAGIC             0x544E437F // .CNT
@@ -134,6 +135,7 @@ char *read_string(FILE* f)
     return realloc(string, sizeof(char) * length);
 }
 
+/*
 char *build_path(const char *str, char c, const char *r) 
 {
     int count = 0;
@@ -146,7 +148,7 @@ char *build_path(const char *str, char c, const char *r)
     char *ptr = res;
     for(tmp = str; *tmp; tmp++) {
         if(*tmp == c) {
-			mkdir(res);
+	   mkdir(res);
             memcpy(ptr, r, rlen);
             ptr += rlen;
         } else {
@@ -156,6 +158,7 @@ char *build_path(const char *str, char c, const char *r)
     *ptr = 0;
     return res;
 }
+*/
 
 char *get_entry_name_by_type(uint32_t type)
 {
@@ -243,6 +246,7 @@ char *get_entry_name_by_type(uint32_t type)
 		break;
 		
 		default:
+		printf("Unknown entry %X\n", type);
 		entry_name = NULL;
 		break;
 	}
@@ -523,9 +527,10 @@ int main (int argc, char *argv[])
 	
 	// Set up the output directory for file writing.
 	char dest_path[256];
+	char dest_dir[256];
 	char pkg_name[256];
 	memset(pkg_name, 0, 256);
-	memcpy(pkg_name, argv[1], 0x13);
+	memcpy(pkg_name, basename(argv[1]), 0x13);
 	mkdir(pkg_name);
 	
 	// Search through the entries for mapped file data and output it.
@@ -537,22 +542,29 @@ int main (int argc, char *argv[])
 		fseek(in, entry_files[i].offset, SEEK_SET);
 		fread(entry_file_data, 1,  entry_files[i].size, in);
 
-		sprintf(dest_path, "%s\\%s", pkg_name, entry_files[i].name);
+		//sprintf(dest_path, "%s\\%s", pkg_name, entry_files[i].name);
+		sprintf(dest_path, "%s/%s", pkg_name, entry_files[i].name);	
 		
-		char *path = build_path(dest_path, '/', "\\");
-		printf("%s\n", path);
+		if (strchr(dest_path,'/')) {
+			strcpy(dest_dir, dest_path);
+			mkdir(dirname(dest_dir));
+		}
+
+		//char *path = build_path(dest_path, '/', "\\");
+		printf("%s\n", dest_path);
 		
-		if ((out = fopen(path, "wb")) == NULL ) {
-			printf("Can't open file for writing!\n");
+		if ((out = fopen(dest_path, "wb")) == NULL ) {
+			printf("Can't open file %s for writing!\n", dest_path);
 			return 0;
 		}
 		
 		fwrite(entry_file_data, 1, entry_files[i].size, out);
+		fclose(out);
 	}
 	
 	// Clean up.
 	fclose(in);
-	fclose(out);
+
 	
 	printf("Finished!\n");
 	
