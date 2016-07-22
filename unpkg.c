@@ -18,6 +18,7 @@
 #define PS4_PKG_ENTRY_TYPE_META_TABLE    0x0100
 #define PS4_PKG_ENTRY_TYPE_NAME_TABLE    0x0200
 #define PS4_PKG_ENTRY_TYPE_LICENSE       0x0400
+#define PS4_PKG_ENTRY_TYPE_0x008	 0x0402
 #define PS4_PKG_ENTRY_TYPE_FILE1         0x1000
 #define PS4_PKG_ENTRY_TYPE_FILE2         0x1200
 
@@ -160,33 +161,39 @@ char *build_path(const char *str, char c, const char *r)
 }
 */
 
+
+// missing entry_008.bin which should be 160 bytes
 char *get_entry_name_by_type(uint32_t type)
 {
 	char *entry_name;
 	switch(type)
 	{
 		case PS4_PKG_ENTRY_TYPE_DIGEST_TABLE:
-		entry_name = "digest_table.bin";
+		entry_name = ".digests"; //"digest_table.bin";
+		break;
+
+		case PS4_PKG_ENTRY_TYPE_0x008:
+		entry_name = "entry_008.bin";
 		break;
 
 		case PS4_PKG_ENTRY_TYPE_0x800:
-		entry_name = "unknown_entry_0x800.bin";
+		entry_name =".entry_0x800"; //"unknown_entry_0x800.bin";
 		break;
 		
 		case PS4_PKG_ENTRY_TYPE_0x200:
-		entry_name = "unknown_entry_0x200.bin";
+		entry_name = ".entry_0x200"; //"unknown_entry_0x200.bin";
 		break;
 		
 		case PS4_PKG_ENTRY_TYPE_0x180:
-		entry_name = "unknown_entry_0x180.bin";
+		entry_name = ".entry_0x180"; //"unknown_entry_0x180.bin";
 		break;
 		
 		case PS4_PKG_ENTRY_TYPE_META_TABLE:
-		entry_name = "meta_table.bin";
+		entry_name = ".meta"; //"meta_table.bin";
 		break;
 		
 		case PS4_PKG_ENTRY_TYPE_NAME_TABLE:
-		entry_name = "name_table.bin";
+		entry_name = ".names"; //"name_table.bin";
 		break;
  
 		case 0x0400:
@@ -396,6 +403,7 @@ int main (int argc, char *argv[])
 			{
 				unknown_file_name = (char *)malloc(256);
 				sprintf(unknown_file_name, "unknown_file_%d.bin", ++unknown_file_count);
+				printf("%s type = %x offset = %X\n", unknown_file_name, entries[i].type, entry_files[i].offset);
 				entry_files[i].name = unknown_file_name;
 			}
 		}
@@ -531,7 +539,7 @@ int main (int argc, char *argv[])
 	char pkg_name[256];
 	memset(pkg_name, 0, 256);
 	memcpy(pkg_name, basename(argv[1]), 0x13);
-	mkdir(pkg_name);
+	mkdir(pkg_name, 0775);
 	
 	// Search through the entries for mapped file data and output it.
 	printf("Dumping internal PKG files:\n");
@@ -547,7 +555,7 @@ int main (int argc, char *argv[])
 		
 		if (strchr(dest_path,'/')) {
 			strcpy(dest_dir, dest_path);
-			mkdir(dirname(dest_dir));
+			mkdir(dirname(dest_dir), 0775);
 		}
 
 		//char *path = build_path(dest_path, '/', "\\");
